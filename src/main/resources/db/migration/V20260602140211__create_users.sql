@@ -1,0 +1,77 @@
+-- ==========================================
+-- Sequence : USERS_SEQ
+-- ==========================================
+
+CREATE SEQUENCE IF NOT EXISTS USERS_SEQ
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    CACHE 1;
+
+
+-- ==========================================
+-- Table : USERS
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS USERS
+(
+    USER_ID          BIGINT NOT NULL DEFAULT nextval('USERS_SEQ'),
+
+    TENANT_ID        BIGINT NOT NULL,
+
+    USERNAME         VARCHAR(100) NOT NULL,
+
+    PASSWORD_HASH    VARCHAR(500) NOT NULL,
+
+    FIRST_NAME       VARCHAR(100),
+    LAST_NAME        VARCHAR(100),
+
+    EMAIL            VARCHAR(255),
+    MOBILE           VARCHAR(20),
+
+    ORG_UNIT_ID      BIGINT,
+
+    STATUS           VARCHAR(20),
+
+    CREATED_BY       BIGINT,
+    UPDATED_BY       BIGINT,
+
+    CREATED_AT       TIMESTAMP,
+    UPDATED_AT       TIMESTAMP,
+
+    IS_DELETED       BOOLEAN NOT NULL DEFAULT FALSE,
+
+    CONSTRAINT PK_USERS
+    PRIMARY KEY (USER_ID),
+
+    CONSTRAINT UK_USERS_USERNAME
+    UNIQUE (USERNAME),
+
+    CONSTRAINT FK_USERS_TENANT
+    FOREIGN KEY (TENANT_ID)
+    REFERENCES MAS_TENANCY (TENANT_ID),
+
+    CONSTRAINT FK_USERS_ORG_UNIT
+    FOREIGN KEY (ORG_UNIT_ID)
+    REFERENCES ORGANIZATION_UNIT (ORG_UNIT_ID)
+    );
+
+
+-- ==========================================
+-- Indexes
+-- ==========================================
+
+CREATE INDEX IF NOT EXISTS IDX_USERS_TENANT
+    ON USERS (TENANT_ID);
+
+CREATE INDEX IF NOT EXISTS IDX_USERS_ORG_UNIT
+    ON USERS (ORG_UNIT_ID);
+
+CREATE INDEX IF NOT EXISTS IDX_USERS_EMAIL
+    ON USERS (EMAIL);
+
+CREATE INDEX IF NOT EXISTS IDX_USERS_STATUS
+    ON USERS (STATUS);
+
+CREATE INDEX IF NOT EXISTS IDX_USERS_DELETED
+    ON USERS (IS_DELETED);
