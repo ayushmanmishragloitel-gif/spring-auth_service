@@ -18,7 +18,6 @@ import com.auth_service.spring.repository.OrganizationUnitRepository;
 import com.auth_service.spring.repository.UsersRepository;
 import com.auth_service.spring.security.JwtService;
 import com.auth_service.spring.service.inter.UserService;
-import com.auth_service.spring.util.PasswordHasher;
 import com.auth_service.spring.util.PasswordGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,7 +38,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final PasswordGenerator passwordGenerator;
-    private final PasswordHasher passwordHasher;
 
     @Override
     public UserResponse create(UserRequest request) {
@@ -85,7 +83,7 @@ public class UserServiceImpl implements UserService {
         user.setOrganizationUnit(orgUnit);
 
         String rawPassword = passwordGenerator.generate();
-        user.setPasswordHash(passwordHasher.hash(rawPassword));
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setStatus(Status.ACTIVE);
 
         Users savedUser =
