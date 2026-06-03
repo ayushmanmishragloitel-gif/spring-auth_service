@@ -1,0 +1,14 @@
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'UK_FEATURE_NAME'
+    ) THEN
+
+ALTER TABLE FEATURES
+    ADD CONSTRAINT UK_FEATURE_NAME
+        UNIQUE (FEATURE_NAME);
+
+END IF;
+END $$;

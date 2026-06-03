@@ -5,6 +5,8 @@ import com.auth_service.spring.enums.FeatureType;
 import com.auth_service.spring.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(
@@ -21,6 +23,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLDelete(sql = "UPDATE FEATURES SET IS_DELETED = true WHERE FEATURE_ID = ?")
+@SQLRestriction("IS_DELETED = false")
 public class Feature extends BaseEntity {
 
     @Id
