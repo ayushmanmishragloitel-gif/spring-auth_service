@@ -3,6 +3,7 @@ package com.auth_service.spring.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.auth_service.spring.enums.Status;
 
 @Entity
 @Table(
@@ -44,6 +45,7 @@ public class Roles extends BaseEntity {
     @Column(name = "DESCRIPTION", length = 500)
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", length = 20)
-    private String status;
+    private Status status;
 }

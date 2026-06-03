@@ -3,6 +3,7 @@ package com.auth_service.spring.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.auth_service.spring.enums.Status;
 
 @Entity
 @Table(name = "USERS")
@@ -49,6 +50,7 @@ public class Users  extends BaseEntity{
     @JoinColumn(name = "ORG_UNIT_ID")
     private OrganizationUnit organizationUnit;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "STATUS")
-    private String status;
+    private Status status;
 }

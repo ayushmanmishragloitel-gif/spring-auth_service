@@ -2,6 +2,7 @@ package com.auth_service.spring.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.auth_service.spring.enums.Status;
 
 @Entity
 @Table(
@@ -50,6 +51,7 @@ public class WorkflowTransition extends BaseEntity {
     @Column(name = "ACTION_CODE", nullable = false)
     private String actionCode;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "STATUS")
-    private String status;
+    private Status status;
 }
