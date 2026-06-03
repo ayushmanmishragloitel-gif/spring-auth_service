@@ -14,6 +14,8 @@ import com.auth_service.spring.repository.MasTenancyRepository;
 import com.auth_service.spring.repository.OrganizationUnitRepository;
 import com.auth_service.spring.repository.UsersRepository;
 import com.auth_service.spring.service.inter.UserService;
+import com.auth_service.spring.util.PasswordHasher;
+import com.auth_service.spring.util.PasswordGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,8 @@ public class UserServiceImpl implements UserService {
     private final MasTenancyRepository tenancyRepository;
     private final OrganizationUnitRepository organizationUnitRepository;
     private final UserMapper mapper;
+    private final PasswordGenerator passwordGenerator;
+    private final PasswordHasher passwordHasher;
 
     @Override
     public UserResponse create(UserRequest request) {
@@ -73,7 +77,8 @@ public class UserServiceImpl implements UserService {
 
         user.setOrganizationUnit(orgUnit);
 
-        user.setPasswordHash(request.getPassword());
+        String rawPassword = passwordGenerator.generate();
+        user.setPasswordHash(passwordHasher.hash(rawPassword));
         user.setStatus(Status.ACTIVE);
 
         Users savedUser =
