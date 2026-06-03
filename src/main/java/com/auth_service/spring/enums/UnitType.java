@@ -6,5 +6,8 @@ public enum UnitType {
     BLOCK,
     FACILITY,
     HOSPITAL,
-    WAREHOUSE
+    WAREHOUSE,
+    CITY,
+    ZONE,
+    WARD
 }
