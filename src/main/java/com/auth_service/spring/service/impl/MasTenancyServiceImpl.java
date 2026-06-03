@@ -4,6 +4,7 @@ import com.auth_service.spring.dto.mapper.MasTenancyMapper;
 import com.auth_service.spring.dto.request.MasTenancyRequest;
 import com.auth_service.spring.dto.response.MasTenancyResponse;
 import com.auth_service.spring.entity.MasTenancy;
+import com.auth_service.spring.exception.ResourceAlreadyExistsException;
 import com.auth_service.spring.exception.ResourceNotFoundException;
 import com.auth_service.spring.repository.MasTenancyRepository;
 import com.auth_service.spring.service.inter.MasTenancyService;
@@ -23,7 +24,7 @@ public class MasTenancyServiceImpl implements MasTenancyService {
     public MasTenancyResponse create(MasTenancyRequest request) {
 
         if (repository.existsByTenantCode(request.getTenantCode())) {
-            throw new ResourceNotFoundException("Tenant code already exists");
+            throw new ResourceAlreadyExistsException("Tenant code already exists");
         }
 
         MasTenancy tenancy = mapper.toEntity(request);
