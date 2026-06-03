@@ -6,6 +6,7 @@ import com.auth_service.spring.dto.request.FeatureUpdateRequest;
 import com.auth_service.spring.dto.response.FeatureResponse;
 import com.auth_service.spring.entity.Feature;
 import com.auth_service.spring.enums.FeatureType;
+import com.auth_service.spring.exception.BadRequestException;
 import com.auth_service.spring.exception.ResourceAlreadyExistsException;
 import com.auth_service.spring.exception.ResourceNotFoundException;
 import com.auth_service.spring.repository.FeatureRepository;
@@ -60,30 +61,114 @@ public class FeatureServiceImpl implements FeatureService {
             throw new ResourceAlreadyExistsException("Feature name already exists");
         }
 
+        FeatureType oldFeatureType = feature.getFeatureType();
+
         FeatureType finalFeatureType = request.getFeatureType() != null
                 ? request.getFeatureType()
                 : feature.getFeatureType();
 
-        Long finalParentFeatureId = request.getParentFeatureId() != null
-                ? request.getParentFeatureId()
-                : feature.getParentFeature() != null
-                  ? feature.getParentFeature().getFeatureId()
-                  : null;
+        /*
+         * If feature type is changing and current feature has child,
+         * then block update because hierarchy can break.
+         */
+        if (request.getFeatureType() != null && request.getFeatureType() != oldFeatureType) {
 
-        String finalIcon = request.getIcon() != null
-                ? request.getIcon()
-                : feature.getIcon();
+            boolean hasChild = featureRepository
+                    .existsByParentFeature_FeatureIdAndIsDeletedFalse(featureId);
+
+            if (hasChild) {
+                throw new BadRequestException(
+                        "Cannot change feature type because child features exist"
+                );
+            }
+        }
+
+        Long finalParentFeatureId;
+
+        if (finalFeatureType == FeatureType.MODULE) {
+
+            finalParentFeatureId = null;
+
+        } else if (request.getFeatureType() != null) {
+
+            /*
+             * If type is changing to SUBMODULE / PAGE / ACTION,
+             * parentFeatureId must come in request.
+             */
+            if (request.getParentFeatureId() == null) {
+                throw new BadRequestException(
+                        finalFeatureType + " must have parentFeatureId"
+                );
+            }
+
+            finalParentFeatureId = request.getParentFeatureId();
+
+        } else {
+
+            /*
+             * If type is not changing,
+             * parentFeatureId is optional.
+             */
+            finalParentFeatureId = request.getParentFeatureId() != null
+                    ? request.getParentFeatureId()
+                    : feature.getParentFeature() != null
+                      ? feature.getParentFeature().getFeatureId()
+                      : null;
+        }
 
         Feature parentFeature = null;
 
         if (finalParentFeatureId != null) {
+
+            if (finalParentFeatureId.equals(featureId)) {
+                throw new BadRequestException("Feature cannot be parent of itself");
+            }
+
             parentFeature = featureRepository.findById(finalParentFeatureId)
                     .orElseThrow(() -> new ResourceNotFoundException("Parent feature not found"));
         }
 
-        validateUpdateHierarchy(finalFeatureType, finalParentFeatureId, finalIcon, parentFeature);
+        String finalIcon;
 
-        FeatureMapper.updateEntityFromRequest(feature, request, parentFeature);
+        if (finalFeatureType == FeatureType.PAGE || finalFeatureType == FeatureType.ACTION) {
+            finalIcon = null;
+        } else {
+            finalIcon = request.getIcon() != null
+                    ? request.getIcon()
+                    : feature.getIcon();
+        }
+
+        validateUpdateHierarchy(
+                finalFeatureType,
+                finalParentFeatureId,
+                finalIcon,
+                parentFeature
+        );
+
+        if (request.getFeatureCode() != null) {
+            feature.setFeatureCode(request.getFeatureCode());
+        }
+
+        if (request.getFeatureName() != null) {
+            feature.setFeatureName(request.getFeatureName());
+        }
+
+        feature.setFeatureType(finalFeatureType);
+        feature.setParentFeature(parentFeature);
+
+        if (request.getSlug() != null) {
+            feature.setSlug(request.getSlug());
+        }
+
+        feature.setIcon(finalIcon);
+
+        if (request.getDisplayOrder() != null) {
+            feature.setDisplayOrder(request.getDisplayOrder());
+        }
+
+        if (request.getStatus() != null) {
+            feature.setStatus(request.getStatus());
+        }
 
         return FeatureMapper.toResponse(
                 featureRepository.save(feature)
@@ -143,23 +228,6 @@ public class FeatureServiceImpl implements FeatureService {
         }
     }
 
-    private void validateUpdateUniqueFields(Long featureId, FeatureRequest request) {
-
-        if (featureRepository.existsByFeatureCodeAndFeatureIdNot(
-                request.getFeatureCode(),
-                featureId
-        )) {
-            throw new ResourceAlreadyExistsException("Feature code already exists");
-        }
-
-        if (featureRepository.existsByFeatureNameAndFeatureIdNot(
-                request.getFeatureName(),
-                featureId
-        )) {
-            throw new ResourceAlreadyExistsException("Feature name already exists");
-        }
-    }
-
     private Feature getParentFeature(Long parentFeatureId) {
 
         if (parentFeatureId == null) {
@@ -173,7 +241,7 @@ public class FeatureServiceImpl implements FeatureService {
     private void validateFeatureHierarchy(FeatureRequest request, Feature parentFeature) {
 
         if (request.getFeatureType() == null) {
-            throw new IllegalArgumentException("Feature type is required");
+            throw new BadRequestException("Feature type is required");
         }
 
         switch (request.getFeatureType()) {
@@ -191,7 +259,7 @@ public class FeatureServiceImpl implements FeatureService {
     private void validateModule(FeatureRequest request) {
 
         if (request.getParentFeatureId() != null) {
-            throw new IllegalArgumentException("MODULE should not have parentFeatureId");
+            throw new BadRequestException("MODULE should not have parentFeatureId");
         }
 
         // MODULE can have icon
@@ -201,11 +269,11 @@ public class FeatureServiceImpl implements FeatureService {
     private void validateSubmodule(FeatureRequest request, Feature parentFeature) {
 
         if (request.getParentFeatureId() == null) {
-            throw new IllegalArgumentException("SUBMODULE must have parentFeatureId");
+            throw new BadRequestException("SUBMODULE must have parentFeatureId");
         }
 
         if (parentFeature == null || parentFeature.getFeatureType() != FeatureType.MODULE) {
-            throw new IllegalArgumentException("SUBMODULE parent must be MODULE");
+            throw new BadRequestException("SUBMODULE parent must be MODULE");
         }
 
         // SUBMODULE can have icon
@@ -215,15 +283,15 @@ public class FeatureServiceImpl implements FeatureService {
     private void validatePage(FeatureRequest request, Feature parentFeature) {
 
         if (request.getParentFeatureId() == null) {
-            throw new IllegalArgumentException("PAGE must have parentFeatureId");
+            throw new BadRequestException("PAGE must have parentFeatureId");
         }
 
         if (parentFeature == null || parentFeature.getFeatureType() != FeatureType.SUBMODULE) {
-            throw new IllegalArgumentException("PAGE parent must be SUBMODULE");
+            throw new BadRequestException("PAGE parent must be SUBMODULE");
         }
 
         if (request.getIcon() != null && !request.getIcon().isBlank()) {
-            throw new IllegalArgumentException("PAGE should not have icon");
+            throw new BadRequestException("PAGE should not have icon");
         }
 
         // PAGE can have slug
@@ -232,15 +300,15 @@ public class FeatureServiceImpl implements FeatureService {
     private void validateAction(FeatureRequest request, Feature parentFeature) {
 
         if (request.getParentFeatureId() == null) {
-            throw new IllegalArgumentException("ACTION must have parentFeatureId");
+            throw new BadRequestException("ACTION must have parentFeatureId");
         }
 
         if (parentFeature == null || parentFeature.getFeatureType() != FeatureType.PAGE) {
-            throw new IllegalArgumentException("ACTION parent must be PAGE");
+            throw new BadRequestException("ACTION parent must be PAGE");
         }
 
         if (request.getIcon() != null && !request.getIcon().isBlank()) {
-            throw new IllegalArgumentException("ACTION should not have icon");
+            throw new BadRequestException("ACTION should not have icon");
         }
 
         // ACTION usually does not need slug
@@ -254,52 +322,52 @@ public class FeatureServiceImpl implements FeatureService {
     ) {
 
         if (featureType == null) {
-            throw new IllegalArgumentException("Feature type is required");
+            throw new BadRequestException("Feature type is required");
         }
 
         switch (featureType) {
 
             case MODULE -> {
                 if (parentFeatureId != null) {
-                    throw new IllegalArgumentException("MODULE should not have parentFeatureId");
+                    throw new BadRequestException("MODULE should not have parentFeatureId");
                 }
             }
 
             case SUBMODULE -> {
                 if (parentFeatureId == null) {
-                    throw new IllegalArgumentException("SUBMODULE must have parentFeatureId");
+                    throw new BadRequestException("SUBMODULE must have parentFeatureId");
                 }
 
                 if (parentFeature == null || parentFeature.getFeatureType() != FeatureType.MODULE) {
-                    throw new IllegalArgumentException("SUBMODULE parent must be MODULE");
+                    throw new BadRequestException("SUBMODULE parent must be MODULE");
                 }
             }
 
             case PAGE -> {
                 if (parentFeatureId == null) {
-                    throw new IllegalArgumentException("PAGE must have parentFeatureId");
+                    throw new BadRequestException("PAGE must have parentFeatureId");
                 }
 
                 if (parentFeature == null || parentFeature.getFeatureType() != FeatureType.SUBMODULE) {
-                    throw new IllegalArgumentException("PAGE parent must be SUBMODULE");
+                    throw new BadRequestException("PAGE parent must be SUBMODULE");
                 }
 
                 if (icon != null && !icon.isBlank()) {
-                    throw new IllegalArgumentException("PAGE should not have icon");
+                    throw new BadRequestException("PAGE should not have icon");
                 }
             }
 
             case ACTION -> {
                 if (parentFeatureId == null) {
-                    throw new IllegalArgumentException("ACTION must have parentFeatureId");
+                    throw new BadRequestException("ACTION must have parentFeatureId");
                 }
 
                 if (parentFeature == null || parentFeature.getFeatureType() != FeatureType.PAGE) {
-                    throw new IllegalArgumentException("ACTION parent must be PAGE");
+                    throw new BadRequestException("ACTION parent must be PAGE");
                 }
 
                 if (icon != null && !icon.isBlank()) {
-                    throw new IllegalArgumentException("ACTION should not have icon");
+                    throw new BadRequestException("ACTION should not have icon");
                 }
             }
         }

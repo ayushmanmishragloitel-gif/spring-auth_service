@@ -44,43 +44,4 @@ public class FeatureMapper {
                 .status(feature.getStatus())
                 .build();
     }
-
-    public static void updateEntityFromRequest(
-            Feature feature,
-            FeatureUpdateRequest request,
-            Feature parentFeature
-    ) {
-
-        if (request.getFeatureCode() != null) {
-            feature.setFeatureCode(request.getFeatureCode());
-        }
-
-        if (request.getFeatureName() != null) {
-            feature.setFeatureName(request.getFeatureName());
-        }
-
-        if (request.getFeatureType() != null) {
-            feature.setFeatureType(request.getFeatureType());
-        }
-
-        if (request.getParentFeatureId() != null) {
-            feature.setParentFeature(parentFeature);
-        }
-
-        if (request.getSlug() != null) {
-            feature.setSlug(request.getSlug());
-        }
-
-        if (request.getIcon() != null) {
-            feature.setIcon(request.getIcon());
-        }
-
-        if (request.getDisplayOrder() != null) {
-            feature.setDisplayOrder(request.getDisplayOrder());
-        }
-
-        if (request.getStatus() != null) {
-            feature.setStatus(request.getStatus());
-        }
-    }
 }
