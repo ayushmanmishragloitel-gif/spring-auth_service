@@ -2,6 +2,7 @@ package com.auth_service.spring.entity;
 
 
 import com.auth_service.spring.enums.FeatureType;
+import com.auth_service.spring.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -55,6 +56,7 @@ public class Feature extends BaseEntity {
     @Column(name = "DISPLAY_ORDER")
     private Integer displayOrder;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", length = 20)
-    private String status;
+    private Status status;
 }

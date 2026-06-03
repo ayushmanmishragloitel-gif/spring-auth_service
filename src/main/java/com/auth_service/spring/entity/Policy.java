@@ -3,6 +3,7 @@ package com.auth_service.spring.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.auth_service.spring.enums.Status;
 
 @Entity
 @Table(name = "POLICIES")
@@ -36,6 +37,7 @@ public class Policy extends BaseEntity {
     @Column(name = "PRIORITY", nullable = false)
     private Integer priority;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "STATUS")
-    private String status;
+    private Status status;
 }
