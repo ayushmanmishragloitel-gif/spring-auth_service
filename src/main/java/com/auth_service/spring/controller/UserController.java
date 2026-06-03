@@ -1,6 +1,8 @@
 package com.auth_service.spring.controller;
 
+import com.auth_service.spring.dto.request.AuthLoginRequest;
 import com.auth_service.spring.dto.request.UserRequest;
+import com.auth_service.spring.dto.response.AuthResponse;
 import com.auth_service.spring.dto.response.UserResponse;
 import com.auth_service.spring.service.inter.UserService;
 import jakarta.validation.Valid;
@@ -25,6 +27,11 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
     }
 
+//    @PostMapping("/register")
+//    public ResponseEntity<AuthResponse> register(@RequestBody UserRequest request) {
+//        return ResponseEntity.ok(service.register(request));
+//    }
+
     @PutMapping("/{userId}")
     public ResponseEntity<UserResponse> update(
             @PathVariable Long userId,
@@ -46,4 +53,8 @@ public class UserController {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthLoginRequest request) {
+        return ResponseEntity.ok(service.login(request));
+    }
 }
